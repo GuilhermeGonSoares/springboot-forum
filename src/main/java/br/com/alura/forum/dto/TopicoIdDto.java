@@ -2,6 +2,7 @@ package br.com.alura.forum.dto;
 
 import br.com.alura.forum.model.StatusTopico;
 import br.com.alura.forum.model.Topico;
+import br.com.alura.forum.model.Usuario;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -23,12 +24,20 @@ public class TopicoIdDto {
         mensagem = topico.getMensagem();
         dataCriacao = topico.getDataCriacao();
         status = topico.getStatus();
-        nomeAutor = topico.getAutor().getNome();
+        Usuario autor = topico.getAutor();
+        if(validaUsuario(autor))
+            nomeAutor = topico.getAutor().getNome();
         nomeCurso = topico.getCurso().getNome();
         var respostasDoTopico = topico.getRespostas();
         respostasDoTopico.forEach(r -> {
             resposta.add(new RespostaDto(r));
         });
+    }
+
+    private boolean validaUsuario(Usuario autor){
+        if (autor == null)
+            return false;
+        return true;
     }
 
     public Long getId() {
