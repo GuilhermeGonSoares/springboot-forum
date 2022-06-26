@@ -18,7 +18,7 @@ public class Topico {
 	private Usuario autor;
 	@ManyToOne
 	private Curso curso;
-	@OneToMany(mappedBy = "topico")
+	@OneToMany(mappedBy = "topico", cascade = CascadeType.ALL)
 	private List<Resposta> respostas = new ArrayList<>();
 
 	public Topico(){}

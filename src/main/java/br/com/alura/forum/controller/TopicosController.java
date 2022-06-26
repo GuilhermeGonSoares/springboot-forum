@@ -1,5 +1,6 @@
 package br.com.alura.forum.controller;
 
+import br.com.alura.forum.dto.TopicoAtt;
 import br.com.alura.forum.dto.TopicoDto;
 import br.com.alura.forum.dto.TopicoForm;
 import br.com.alura.forum.dto.TopicoIdDto;
@@ -8,6 +9,11 @@ import br.com.alura.forum.model.Topico;
 import br.com.alura.forum.repository.CursoRepository;
 import br.com.alura.forum.repository.TopicosRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -26,11 +32,17 @@ public class TopicosController {
     private CursoRepository cursoRepository;
 
     @GetMapping
-    public List<TopicoDto> getTopicos(String nomeCurso){
-        if (nomeCurso == null)
-            return TopicoDto.converteParaDto(topicosRepository.findAll());
-        else
-            return TopicoDto.converteParaDto(topicosRepository.findByCursoNome(nomeCurso));
+    public Page<TopicoDto> getTopicos(@RequestParam(required = false) String nomeCurso,
+                                     @PageableDefault(sort = "id", direction = Sort.Direction.DESC, page = 0, size = 10) Pageable paginacao){
+
+        Page<Topico> topicos;
+        if (nomeCurso == null){
+            topicos = topicosRepository.findAll(paginacao);
+        }
+        else{
+            topicos = topicosRepository.findByCursoNome(nomeCurso, paginacao);
+        }
+        return TopicoDto.converteParaDto(topicos);
     }
 
     @PostMapping
@@ -48,15 +60,39 @@ public class TopicosController {
     }
 
     @GetMapping("/{id}")
-    public TopicoIdDto getTopicoById(@PathVariable("id") Long id){
+    public ResponseEntity<TopicoIdDto> getTopicoById(@PathVariable("id") Long id){
         var existeTopico = topicosRepository.findById(id);
-        if(existeTopico == null){
-            throw new RuntimeException("Tópico não encontrado!");
+        System.out.println(existeTopico);
+        if(!existeTopico.isPresent()){
+            return ResponseEntity.notFound().build();
         }
         var topico = existeTopico.get();
 
-        return new TopicoIdDto(topico);
+        return ResponseEntity.ok(new TopicoIdDto(topico));
+    }
+    @PutMapping("/{id}")
+    public ResponseEntity<TopicoDto> atualizarTopico(@PathVariable Long id, @RequestBody @Valid TopicoAtt topicoAtt){
+        var exiteTopico = topicosRepository.findById(id);
+        if(!exiteTopico.isPresent()){
+            return ResponseEntity.notFound().build();
+        }
+        var topico = exiteTopico.get();
+        Topico topicoAtualizado = topicoAtt.atualizar(id, topico);
+
+        topicosRepository.save(topicoAtualizado);
+
+        return ResponseEntity.ok(new TopicoDto(topicoAtualizado));
     }
 
-    @Top
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> deletarTopico(@PathVariable Long id){
+        var existeTopico = topicosRepository.findById(id);
+        if(!existeTopico.isPresent()){
+            return ResponseEntity.notFound().build();
+        }
+        var topico = existeTopico.get();
+        topicosRepository.delete(topico);
+
+        return ResponseEntity.ok().build();
+    }
 }
